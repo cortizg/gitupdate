@@ -1,0 +1,93 @@
+#!/bin/bash
+DIRNAME=`dirname $0`
+BASENAME=`basename $0`
+CONS=0
+USAR="usar: gitupdate.bsh [-c|-a|-e|-m|-t|-s]\n \
+\t\t-c\t\tCorregido
+\t\t-a\t\tAgregado
+\t\t-e\t\tEliminado
+\t\t-m\t\tMezclado
+\t\t-t\t\tTraducido
+\t\t-s\t\tEstado de Repositorio"
+
+checkConsecutivos() {
+
+	#si existe el archivo recuperar consecutivo, sino, comenzamos con 0 se crea archivo al final
+	[[ -e $DIRNAME/cons$1.txt ]] && CONS=$(cat $DIRNAME/cons$1.txt) 
+
+	SCONS=$(($CONS+1))  #incremento ++
+	GITOK=$(git branch 2>/dev/null | grep "*" | wc -l) #si es un repo git ok 1
+
+}
+
+updateConsecutivos() {
+
+	#agregar consecutivo a archivo
+	echo $SCONS > $DIRNAME/cons$1.txt
+
+}
+
+revisaGit() {
+
+	[[ $GITOK -eq 0 ]] && exit 1 #si es 0 salir, no existe repo git
+
+	RAMA=$(git branch | grep "*" | cut -d" " -f2) #extraer rama git
+
+	#Si es igual a master asignar a seccion, sino, extraer y asignar a seccion
+	[[ $RAMA = "master" ]] && SECCION=$RAMA || SECCION=$(echo $RAMA | cut -d"." -f4) 
+
+}
+
+commit() {
+
+	[[ $# -eq 0 ]] && echo -e "no hay parametros, $USAR" && exit 1
+
+	unset GETOPT
+	GETOPT=$(getopt -o 'caemt' -n 'commit' -- "$@")
+	[[ $? -ne 0 ]] && echo -e "parámetro invalido, $USAR" >&2 && exit 1
+	eval set -- "$GETOPT"
+
+	while true;
+	do
+		case $1 in
+			'-c')
+				ASUNTO="Corregido"
+				checkConsecutivos $ASUNTO
+				shift
+				;;
+			'-a')
+				ASUNTO="Agregado"
+				checkConsecutivos $ASUNTO
+				shift
+				;;
+			'-e')
+				ASUNTO="Eliminado"
+				checkConsecutivos $ASUNTO
+				shift
+				;;
+			'-m')
+				ASUNTO="Mezclado"
+				checkConsecutivos $ASUNTO
+				shift
+				;;
+			'-t')
+				ASUNTO="Traducido"
+				checkConsecutivos $ASUNTO
+				shift
+				;;
+			'-s')
+				clear && git status && git branch && exit 0
+				shift
+				;;
+			'--') 
+				shift; break
+				;;
+			*) exit 1;;
+		esac
+	done
+	revisaGit
+	git commit -a -m "$SECCION $ASUNTO $SCONS" && git push origin $RAMA
+	updateConsecutivos $ASUNTO
+}
+
+commit $@

@@ -43,7 +43,7 @@ commit() {
 	[[ $# -eq 0 ]] && echo -e "no hay parametros, $USAR" && exit 1
 
 	unset GETOPT
-	GETOPT=$(getopt -o 'caemt' -n 'commit' -- "$@")
+	GETOPT=$(getopt -o 'caemts' -n 'commit' -- "$@")
 	[[ $? -ne 0 ]] && echo -e "parámetro invalido, $USAR" >&2 && exit 1
 	eval set -- "$GETOPT"
 
